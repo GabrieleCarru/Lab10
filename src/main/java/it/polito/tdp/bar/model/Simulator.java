@@ -1,12 +1,13 @@
 package it.polito.tdp.bar.model;
 
 import java.time.Duration;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+
+import it.polito.tdp.bar.model.Event.EventType;
 
 public class Simulator {
 
@@ -55,7 +56,73 @@ public class Simulator {
 		Duration arrivo = Duration.ofMinutes(0);
 		
 		for(int i = 0; i < NUM_EVENT; i++) {
+			// Nella creazione del nuovo evento lascio che sia la classe Event a creare casualmente il resto.
+			Event e = new Event(arrivo, EventType.ARRIVO_GRUPPO_CLIENTI, null);
+			this.queue.add(e);
+			arrivo = arrivo.plusMinutes(1 + (int)(Math.random() * this.T_MIN_ARRIVO_MAX));
+		}
+	}
+	
+	public void init() {
+		caricaTavoli();
+		
+		this.queue = new PriorityQueue<Event>();
+		caricaEventi();
+		this.stats = new Statistiche();
+	}
+	
+	public void run() {
+		while(!queue.isEmpty()) {
+			Event e = queue.poll();
+			System.out.println(e);
+			processEvent(e);
+		}
+	}
+	
+	private void processEvent(Event e) {
+		switch(e.getType()) {
+		
+		case ARRIVO_GRUPPO_CLIENTI:
 			
+			// Aggiungo i clienti ai clientiTot
+			stats.addNumClientiTot(e.getNumPersone());
+			
+			// Cerco un tavolo 
+			Tavolo trovato = null;
+			for(Tavolo t : this.tavoli) {
+				if( (!t.isOccupato())  &&  (t.getnPosti() >= e.getNumPersone())  
+						&&  ((t.getnPosti()*this.OCCUPAZIONE_MIN) <= e.getNumPersone()) ) {
+					trovato = t;
+					break; // Il primo che trovo sarà il più piccolo che soddisfa il requisito avendoli precedentemente ordinati
+				}
+			}
+			
+			if(trovato != null) {
+				// IL TAVOLO E' STATO TROVATO E ASSEGNATO AL GRUPPO
+				System.out.println(String.format("Sedute %d persione ad un tavolo da %d posti. \n", 
+														e.getNumPersone(), trovato.getnPosti()));
+				stats.addNumClientiSoddisfatti(e.getNumPersone());
+				trovato.setOccupato(true);
+				
+				// Prima o poi si alzeranno e, all'interno di Event, c'è l'informazione calcolata casualmente sulla permanenza.
+				queue.add(new Event(e.getTime().plus(e.getPermanenza()), EventType.TAVOLO_LIBERATO, trovato));
+			} else {
+				// NESSUN TAVOLO DISPONIBILE. ACCETTERANNO IL BANCONE?
+				double bancone = Math.random();
+				if(bancone <= e.getTolleranza()) {
+					// Accettano il bancone
+					stats.addNumClientiSoddisfatti(e.getNumPersone());
+				} else {
+					// rifiutano il bancone e vanno via
+					stats.addNumClientiInsoddisfatti(e.getNumPersone());
+				}
+			}
+			
+			break;
+			
+		case TAVOLO_LIBERATO:
+			e.getTavolo().setOccupato(false); // Libero il tavolo
+			break;
 		}
 	}
 	
@@ -77,20 +144,7 @@ public class Simulator {
 	// METODI PER RESTITUIRE I RISULTATI
 	
 	// SIMULAZIONE (!!!)
-	public void run() {
-		
-	}
 	
-	private void processEvent(Event e) {
-//		switch(e.getType()) {
-		
-//		case blahblah:
-//			break;
-//			
-//		
-//		
-//		}
-	}
 	
 	
 }

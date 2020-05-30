@@ -1,7 +1,6 @@
 package it.polito.tdp.bar.model;
 
 import java.time.Duration;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
@@ -9,27 +8,32 @@ public class Event implements Comparable<Event>{
 	
 	public enum EventType {
 		ARRIVO_GRUPPO_CLIENTI, // Arriva un nuovo gruppo. Tavolo/bancone/abbandona
-		TABOLO_LIBERATO, // Gruppo precedentemente seduto tavolo, lo libera.
+		TAVOLO_LIBERATO, // Gruppo precedentemente seduto tavolo, lo libera.
 	}
 
 	private Duration time; // orario di arrivo rispetto all'inizio della simulazione
 	private EventType type;
 	private int numPersone;
 	private Duration permanenza;
-	private float tolleranza;
+	private double tolleranza;
 	private Tavolo tavolo;
 	// Solo a scopo di controllo:
 	private int permanenzaInt;
 	
 	/**
-	 * Costruttore di {@link Event} a cui non passo solo il paramentro {@code time} 
-	 * perché l'istrante temporale viene gestito dalla classe {@link Simulatior} secondo 
-	 * le specifiche del problema. 
-	 * Gli altri parametri li genererò random (rispettando le indicazioni) 
-	 * come da specifica del problema.
-	 * ATTENZIONE: IL LIMITE DI LASCIARE AL COSTRUTTORE DI {@code EVENT} LA CREAZIONE RANDOM DI 
-	 * ALCUNI DATI È CHE, QUALORA CAMBIASSERO I CRITERI DI GENERAZIONE CASUALE (ES. NUM MAX PERSONE), 
-	 * BISOGNEREBBE CAMABIARE MANUALMENTE QUESTI DATI.   
+	 * Costruttore di {@link Event} a cui vengono passati i parametri: 
+	 * @param time : Duration che indica l'arrivo del gruppo in minuti successivi all'apertura
+	 * @param type : EventType che può essere 'ARRIVO_GRUPPO_CLIENTI' oppure 'TAVOLO_LIBERATO'
+	 * @param tavolo : Oggetto di classe Tavolo che indica il tavolo che viene assegnato al gruppo (qualora riescano ad ottenerne uno)
+	 *  
+	 *  
+	 * <p>Gli altri parametri vengono generati random (rispettando le indicazioni nel testo del problema) direttamente da questo costruttore. </p>
+	 * 
+	 * ERRORE COMMESSO: Conviene sempre utilizzare delle variabili statiche per quei valori che potrebbero voler essere cambiati in futuro
+	 * (esempio: numero massimo persone gruppo, durata minima nel locale, etc) cosi da poter effettura una simulazione differente 
+	 * dovendo semplicemente cambiare il valore di qualche variabile.
+	 * Per lo stesso motivo e anche per una questione di ordine, sarebbe stato meglio lasciare che fosse la classe {@link Simulator} 
+	 * a gestire in maniera causale (random) anche gli altri parametri.   
 	 */
 	public Event(Duration time, EventType type, Tavolo tavolo) {
 		// Assegnazione variabili parametri
@@ -51,7 +55,7 @@ public class Event implements Comparable<Event>{
 		setPermanenzaInt(result);
 		
 		// Generatore random percentuale di probabilità nell'accettare il bancone in assenza di tavolo
-		this.tolleranza = (float) Math.random(); 
+		this.tolleranza = Math.random(); 
 		
 	}
 	
@@ -64,6 +68,10 @@ public class Event implements Comparable<Event>{
 	public Duration getTime() {
 		return time;
 	}
+	
+	public int getTimeInt() {
+		return time.toMinutesPart();
+	}
 
 	public int getNumPersone() {
 		return this.numPersone;
@@ -73,12 +81,16 @@ public class Event implements Comparable<Event>{
 		return this.permanenza;
 	}
 	
-	public float getTolleranza() {
+	public double getTolleranza() {
 		return this.tolleranza;
 	}
 	
 	public Tavolo getTavolo() {
 		return this.tavolo;
+	}
+
+	public EventType getType() {
+		return type;
 	}
 	
 	private int getPermanenzaInt() {
@@ -87,26 +99,32 @@ public class Event implements Comparable<Event>{
 	
 	@Override
 	public String toString() {
-		return "EventoArrivoGruppo [Arrivo=" + time + ", numPersone=" + numPersone + ", permanenza=" + permanenzaInt + "min]";
+		return type.name() + " [Arrivo=" + getTimeInt() + ", numPersone=" + numPersone + ", permanenza=" + permanenzaInt + "min]";
 	}
 
 	@Override
 	public int compareTo(Event other) {
 		return this.time.compareTo(other.time);
 	}
+
 	
 	
 	// A SCOPO DI DEBBUGING, DA ELIMINARE NEL PROGETTO FINALE
-//	public static void main(String args[]) {
-//		Duration d = Duration.ofMinutes(60*8 + 45);
-//		Event e = new Event(d, new Tavolo(), ); 
-//		System.out.println(String.format("Il numero di persone che entrano nel locale è: %d \n",
-//				e.getNumPersone()));
-//		System.out.println(String.format("La durata della permanenza nel locale è: %d \n",
-//				e.getPermanenzaInt()));
-//		System.out.println(String.format("La tolleranza del gruppo è: %f \n",
-//				e.getTolleranza()));
-//		
-//		System.out.println(e);
-//	}
+	public static void main(String args[]) {
+
+		Event e = new Event(Duration.of(45, ChronoUnit.MINUTES), EventType.ARRIVO_GRUPPO_CLIENTI, null); 
+		
+		
+			System.out.println(String.format("Il numero di persone che entrano nel locale è: %d \n",
+					e.getNumPersone()));
+			System.out.println(String.format("La durata della permanenza nel locale è: %d minuti \n",
+					e.getPermanenzaInt()));
+			System.out.println(String.format("La tolleranza del gruppo è: %f \n",
+					e.getTolleranza()));
+			
+			System.out.println(e);
+			System.out.println("['Arrivo' è il numero di minuti - successivi all'apertura - in cui è arrivato il gruppo]");
+		
+		
+	}
 }
